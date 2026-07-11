@@ -17,6 +17,23 @@ Author: Jinwoo Kim
 
 Package: com.yulkytulky.taptaptiptaptime
 Architecture: iphoneos-arm64
+Version: 1.0.1
+Section: Tweaks
+Maintainer: YulkyTulky
+Installed-Size: 588
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0)
+Filename: ./debians/com.yulkytulky.taptaptiptaptime_1.0.1_iphoneos-arm64.deb
+Size: 216810
+MD5sum: 932457ce522785642ac4b646d52d61d0
+SHA1: 18a8dd73d804b02282353b7b1ce8f45bbf71bfe2
+SHA256: a666304d44c0052ce3146097fdaa6a2f1069c168e710ff7b4b9a71d12cd033a1
+SHA512: 7d0d19eed3a4d8b6574ba28b6935aaed2d99ad195b3a34b667d6dfa2a59801122021897d3858d6a968bfbf9f6333599582cd1c8eee41bdcb9c85de49c98f3ae2
+Description: Tap on the time to see the date in the status bar!
+Name: TapTapTipTapTime
+Author: YulkyTulky
+
+Package: com.yulkytulky.taptaptiptaptime
+Architecture: iphoneos-arm64
 Version: 1.0
 Section: Tweaks
 Maintainer: YulkyTulky
