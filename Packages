@@ -1,0 +1,34 @@
+Package: com.pookjw.metalhudloader
+Architecture: iphoneos-arm64
+Version: 1.3.6
+Section: Tweaks
+Maintainer: Jinwoo Kim
+Installed-Size: 348
+Depends: firmware (>= 15.0), mobilesubstrate (>= 0.9.5000), com.opa334.ccsupport
+Filename: ./debians/com.pookjw.metalhudloader_1.3.6_iphoneos-arm64.deb
+Size: 12800
+MD5sum: d14e52b4fa97296f642fa12098a422a9
+SHA1: b258c06030aa4d9a5b484a2f969e66c86b1799ba
+SHA256: 235a05d5f9c1b150e9d9a01c2ff612fbeaa17bad76530d6ab36f6d520cdc1e8a
+SHA512: 8c4f63131b2aab1f355a5b60d10d2363a5d551fa08f1a7aac03dd41703e969043304865c54efb3d80c6f93935b202e443b88dbd90b01b3cf70f164d87806b238
+Description: An awesome MobileSubstrate tweak!
+Name: MetalHudLoader
+Author: Jinwoo Kim
+
+Package: me.kritanta.gravitation
+Architecture: iphoneos-arm64
+Version: 1.0.0
+Section: Tweaks
+Maintainer: Kritanta
+Installed-Size: 424
+Depends: mobilesubstrate, preferenceloader, firmware (>= 15.0)
+Filename: ./debians/me.kritanta.gravitation_1.0.0_iphoneos-arm64.deb
+Size: 58534
+MD5sum: 779c0ee80bfc9fffd96f3bf7df5d13f4
+SHA1: d6be838616286c8d714b40ad8b1d8b0f9f6b9a69
+SHA256: eac050cf39ba6d41f3781adb26ac732929cc42ea6d3fd6aba3510d409b30b082
+SHA512: 44ad33f3e27b37a4862726149eb0a1cd22f71a6bf314c1a91441f3d86961b1e8ad7e1be823cdf4c5eecfb736977c7ef0b88952886ccea8f300ccf86bd3645c69
+Description: Shake your phone to unhinge your icons!
+Name: Gravitation
+Author: Kritanta
+
