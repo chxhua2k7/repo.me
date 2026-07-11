@@ -153,10 +153,21 @@ install_packages() {
     echo "Checking for required packages..."
     packages="apt-utils gnupg xz-utils zstd bzip2 lz4 gzip gawk"
 
+    local sudo_cmd=""
+    if [[ "$(id -u)" -ne 0 ]]; then
+        if command -v sudo &> /dev/null; then
+            sudo_cmd="sudo"
+        else
+            echo "Warning: not root and sudo is unavailable; skipping package installation."
+            echo "Make sure these are installed: $packages"
+            return
+        fi
+    fi
+
     for package in $packages; do
         if ! dpkg -s "$package" &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y "$package"
+            $sudo_cmd apt-get update
+            $sudo_cmd apt-get install -y "$package"
         fi
     done
 }
@@ -179,11 +190,12 @@ install_brew_packages() {
 prepare_apt_ftparchive() {
     if ! command -v apt-ftparchive &> /dev/null; then
         wget -q -nc https://apt.procurs.us/apt-ftparchive
-        sudo chmod 755 ./apt-ftparchive
+        chmod 755 ./apt-ftparchive
     fi
 
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        mkdir -p /usr/local/etc/apt/apt.conf.d/
+        mkdir -p /usr/local/etc/apt/apt.conf.d/ 2>/dev/null \
+            || echo "Note: could not create /usr/local/etc/apt/apt.conf.d (needs admin rights); continuing anyway."
     fi
 }
 

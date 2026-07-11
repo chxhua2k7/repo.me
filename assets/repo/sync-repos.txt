@@ -1,0 +1,5 @@
+# 每行一個 GitHub repo(owner/name)。
+# GitHub Actions 會定時抓這些 repo 最新 release 裡的 .deb 放進 debians/。
+# 以 # 開頭的行是註解。
+chxhua2k7/Gravitation
+chxhua2k7/MetalHudLoader

@@ -1,0 +1,87 @@
+name: Sync releases & rebuild repo
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [release-sync]   # 插件 repo 發 release 時即時觸發
+  schedule:
+    - cron: '0 */6 * * *'   # 每 6 小時檢查一次(備援)
+  push:
+    branches: [main]
+    paths:
+      - 'debians/**'
+      - 'assets/repo/sync-repos.txt'
+      - 'assets/repo/repo.conf'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-releases
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download latest release .debs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          while IFS= read -r line; do
+            repo="${line%%#*}"
+            repo="$(echo "$repo" | xargs)"
+            [ -z "$repo" ] && continue
+            echo "::group::$repo"
+            gh release download --repo "$repo" --pattern '*.deb' --dir debians --skip-existing \
+              || echo "No downloadable release assets for $repo"
+            echo "::endgroup::"
+          done < assets/repo/sync-repos.txt
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-utils gnupg xz-utils zstd bzip2 lz4 gzip gawk
+
+      - name: Build package indexes
+        run: |
+          rm -f Packages Packages.* Contents-iphoneos-arm Contents-iphoneos-arm.* Release Release.gpg
+
+          apt-ftparchive packages ./debians > Packages
+          gzip -c9 Packages > Packages.gz
+          xz -c9 Packages > Packages.xz
+          zstd -q -c -19 Packages > Packages.zst
+          bzip2 -c9 Packages > Packages.bz2
+
+          apt-ftparchive contents ./debians > Contents-iphoneos-arm
+          bzip2 -c9 Contents-iphoneos-arm > Contents-iphoneos-arm.bz2
+          xz -c9 Contents-iphoneos-arm > Contents-iphoneos-arm.xz
+          xz -5fkev --format=lzma Contents-iphoneos-arm > Contents-iphoneos-arm.lzma
+          lz4 -q -c9 Contents-iphoneos-arm > Contents-iphoneos-arm.lz4
+          gzip -c9 Contents-iphoneos-arm > Contents-iphoneos-arm.gz
+          zstd -q -c -19 Contents-iphoneos-arm > Contents-iphoneos-arm.zst
+
+          apt-ftparchive release -c assets/repo/repo.conf . > Release
+
+      - name: Sign Release (only if GPG_SIGNING_KEY secret is set)
+        if: ${{ secrets.GPG_SIGNING_KEY != '' }}
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+        run: |
+          echo "$GPG_SIGNING_KEY" | gpg --batch --import
+          key_id=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+          gpg --batch -abs -u "$key_id" -o Release.gpg Release
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "ci: sync release debs and rebuild repo indexes"
+          git push
