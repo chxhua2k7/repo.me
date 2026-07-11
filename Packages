@@ -15,6 +15,23 @@ Description: An awesome MobileSubstrate tweak!
 Name: MetalHudLoader
 Author: Jinwoo Kim
 
+Package: com.pookjw.metalhudloader
+Architecture: iphoneos-arm64
+Version: 27.0
+Section: Tweaks
+Maintainer: Jinwoo Kim
+Installed-Size: 348
+Depends: firmware (>= 15.0), mobilesubstrate (>= 0.9.5000), com.opa334.ccsupport
+Filename: ./debians/com.pookjw.metalhudloader_27.0_iphoneos-arm64.deb
+Size: 17130
+MD5sum: 2b402c0584ba304097d38995fd7172d9
+SHA1: a8a9dd5b426ee3fe09580360dc544861337e63f5
+SHA256: 405d792d0e4ef09331c7325395a8b1185284786844e1ac4a0f12619b5f766c5f
+SHA512: 30f5645f48df1abfe7ecfafa86071e0bc215b173660146353776eb3b879f00311d0899a67668e9900a410f61212747e9b0b2a3523a6712499bc3a5b5bed8d265
+Description: An awesome MobileSubstrate tweak!
+Name: MetalHudLoader
+Author: Jinwoo Kim
+
 Package: com.yulkytulky.taptaptiptaptime
 Architecture: iphoneos-arm64
 Version: 1.0.1
@@ -45,6 +62,23 @@ MD5sum: a12317566ff4d210b30e82f56f02395d
 SHA1: 5d6e96826fc297925a540996f7291aee031acbe8
 SHA256: 930300c7635fd10520a93469d191f7a3b20ad725391ad4128e96ded97814b3e7
 SHA512: 5b52af8f38d3f70b70ab8790772efc5f169f7dc1f61004e8dca01ec13c9e02768811c75cd589f910ea22243c8f358779d0d82801c0542c1177cdf949bc2fac00
+Description: Tap on the time to see the date in the status bar!
+Name: TapTapTipTapTime
+Author: YulkyTulky
+
+Package: com.yulkytulky.taptaptiptaptime
+Architecture: iphoneos-arm64
+Version: 27.0
+Section: Tweaks
+Maintainer: YulkyTulky
+Installed-Size: 588
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0)
+Filename: ./debians/com.yulkytulky.taptaptiptaptime_27.0_iphoneos-arm64.deb
+Size: 216820
+MD5sum: 33123fd4d74155496fe2cb3fde3dd474
+SHA1: 16500eb873037f9f0dab457f122a8b525b0adbeb
+SHA256: 7773474f0a0482c203d2262b0e37f94a17445d1dd8289418605fc805c00b8260
+SHA512: ab58bdb98ebec85cf47f4d5140d265541b006aef8aed3e5ee1cf2dfb28e3c870b689ea4ecc03b5c529e8c1169f507bbfbd7c71f65fae2ce909fb1d7e8daf5098
 Description: Tap on the time to see the date in the status bar!
 Name: TapTapTipTapTime
 Author: YulkyTulky
