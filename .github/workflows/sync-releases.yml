@@ -25,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # 追分支最新,而非事件當下的 SHA,避免排隊後 push 舊基底被拒
 
       - name: Download latest release .debs
         env:
@@ -87,4 +89,9 @@ jobs:
             exit 0
           fi
           git commit -m "ci: sync release debs and rebuild repo indexes"
-          git push
+          git push || {
+            echo "Push rejected; rebasing onto latest main and retrying..."
+            git fetch origin main
+            git rebase -X theirs origin/main
+            git push
+          }
