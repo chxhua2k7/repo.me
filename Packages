@@ -100,3 +100,20 @@ Description: Shake your phone to unhinge your icons!
 Name: Gravitation
 Author: Kritanta
 
+Package: me.kritanta.gravitation
+Architecture: iphoneos-arm64
+Version: 27.0
+Section: Tweaks
+Maintainer: Kritanta
+Installed-Size: 424
+Depends: mobilesubstrate, preferenceloader, firmware (>= 15.0)
+Filename: ./debians/me.kritanta.gravitation_27.0_iphoneos-arm64.deb
+Size: 58538
+MD5sum: de11f3420ff702609fef2db47bdd846e
+SHA1: 471938f7cb686cdd47f3fb2cac1c259859365553
+SHA256: 3fccf554fcb297d3fc5622aa8044ebd500d65e256c05538e183ed7072f8a7df1
+SHA512: d6c2606c9f469126cb074a50120e7796f0d9e765683665b2e815962c7f89ab70313581ba5ab490358477e104ea67b9b55568f3d138fd96462cffe956461f3728
+Description: Shake your phone to unhinge your icons!
+Name: Gravitation
+Author: Kritanta
+
