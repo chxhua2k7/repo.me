@@ -67,6 +67,54 @@ jobs:
 
           apt-ftparchive release -c assets/repo/repo.conf . > Release
 
+      - name: Generate sileo-featured.json from Packages
+        run: |
+          python3 - <<'EOF'
+          import json, os, re
+
+          BASE = "https://repo.y00e.org"
+          DEFAULT_BANNER = "assets/repo/Banners/RepoHeader.png"
+
+          def field(stanza, name):
+              m = re.search(rf"^{name}: *(.+)$", stanza, re.M)
+              return m.group(1).strip() if m else ""
+
+          def vkey(v):
+              return [int(x) if x.isdigit() else 0 for x in re.split(r"[.\-+~:]", v or "0")]
+
+          pkgs = {}
+          with open("Packages") as f:
+              for stanza in f.read().split("\n\n"):
+                  pid = field(stanza, "Package")
+                  if not pid:
+                      continue
+                  version = field(stanza, "Version")
+                  if pid not in pkgs or vkey(version) > vkey(pkgs[pid]["version"]):
+                      pkgs[pid] = {"version": version, "name": field(stanza, "Name") or pid}
+
+          banners = []
+          for pid, info in sorted(pkgs.items(), key=lambda kv: kv[1]["name"].lower()):
+              banner = f"assets/repo/Banners/{pid}.png"
+              if not os.path.exists(banner):
+                  banner = DEFAULT_BANNER
+              banners.append({
+                  "url": f"{BASE}/{banner}",
+                  "title": info["name"],
+                  "package": pid,
+                  "hideShadow": False,
+              })
+
+          featured = {
+              "class": "FeaturedBannersView",
+              "itemSize": "{296, 148}",
+              "itemCornerRadius": 10,
+              "banners": banners,
+          }
+          with open("sileo-featured.json", "w") as f:
+              json.dump(featured, f, indent=2)
+          print(f"Featured {len(banners)} package(s).")
+          EOF
+
       - name: Sign Release (only if GPG_SIGNING_KEY secret is set)
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}

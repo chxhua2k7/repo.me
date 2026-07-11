@@ -61,40 +61,94 @@
 
     <div class="container">
       <h2 class="section-title">Featured Packages</h2>
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">Old Package</div>
-            <div class="card-body">
-              <p class="card-text">
-                This is a sample package with minimal information. It also
-                simulates an old package that's incompatible only with iOS lower
-                than 7.0.
-              </p>
-              <a
-                class="btn btn-primary"
-                href="depictions/web/?p=com.example.oldsample"
-                >More info</a
-              >
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header">New Package</div>
-            <div class="card-body">
-              <p class="card-text">
-                This is a sample package with lots of information.
-              </p>
-              <a
-                class="btn btn-primary"
-                href="depictions/web/?p=com.example.newsample"
-                >More info</a
-              >
-            </div>
-          </div>
-        </div>
+      <div class="row g-4" id="featured-packages">
+        <p class="text-secondary">Loading packages…</p>
       </div>
     </div>
+
+    <script>
+      function compareVersions(a, b) {
+        const split = (v) =>
+          (v || "0").split(/[.\-+~:]/).map((x) => parseInt(x, 10) || 0);
+        const pa = split(a);
+        const pb = split(b);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+          const d = (pa[i] || 0) - (pb[i] || 0);
+          if (d !== 0) return d;
+        }
+        return 0;
+      }
+
+      async function loadFeaturedPackages() {
+        const container = document.getElementById("featured-packages");
+        try {
+          const res = await fetch("Packages", { cache: "no-cache" });
+          if (!res.ok) throw new Error(res.status);
+          const stanzas = (await res.text()).split(/\n\s*\n/);
+          const pkgs = new Map();
+          for (const stanza of stanzas) {
+            const field = (name) => {
+              const m = stanza.match(new RegExp("^" + name + ": *(.+)$", "m"));
+              return m ? m[1].trim() : "";
+            };
+            const id = field("Package");
+            if (!id) continue;
+            const entry = {
+              id,
+              name: field("Name") || id,
+              version: field("Version"),
+              description: field("Description") || "No description provided.",
+              author: field("Author"),
+            };
+            const seen = pkgs.get(id);
+            if (!seen || compareVersions(entry.version, seen.version) > 0) {
+              pkgs.set(id, entry);
+            }
+          }
+
+          container.textContent = "";
+          for (const pkg of [...pkgs.values()].sort((a, b) =>
+            a.name.localeCompare(b.name)
+          )) {
+            const col = document.createElement("div");
+            col.className = "col-md-6";
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const header = document.createElement("div");
+            header.className = "card-header";
+            header.textContent = `${pkg.name} ${pkg.version}`;
+
+            const body = document.createElement("div");
+            body.className = "card-body";
+
+            const desc = document.createElement("p");
+            desc.className = "card-text";
+            desc.textContent =
+              pkg.description + (pkg.author ? ` — ${pkg.author}` : "");
+
+            const btn = document.createElement("a");
+            btn.className = "btn btn-primary";
+            btn.href = "sileo://package/" + encodeURIComponent(pkg.id);
+            btn.textContent = "View in Sileo";
+
+            body.append(desc, btn);
+            card.append(header, body);
+            col.append(card);
+            container.append(col);
+          }
+          if (pkgs.size === 0) {
+            container.innerHTML =
+              '<p class="text-secondary">No packages yet.</p>';
+          }
+        } catch (err) {
+          container.innerHTML =
+            '<p class="text-secondary">Could not load package list.</p>';
+        }
+      }
+
+      loadFeaturedPackages();
+    </script>
   </body>
 </html>
