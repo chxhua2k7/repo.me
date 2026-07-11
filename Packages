@@ -15,6 +15,23 @@ Description: An awesome MobileSubstrate tweak!
 Name: MetalHudLoader
 Author: Jinwoo Kim
 
+Package: com.yulkytulky.taptaptiptaptime
+Architecture: iphoneos-arm64
+Version: 1.0
+Section: Tweaks
+Maintainer: YulkyTulky
+Installed-Size: 588
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0)
+Filename: ./debians/com.yulkytulky.taptaptiptaptime_1.0_iphoneos-arm64.deb
+Size: 217052
+MD5sum: a12317566ff4d210b30e82f56f02395d
+SHA1: 5d6e96826fc297925a540996f7291aee031acbe8
+SHA256: 930300c7635fd10520a93469d191f7a3b20ad725391ad4128e96ded97814b3e7
+SHA512: 5b52af8f38d3f70b70ab8790772efc5f169f7dc1f61004e8dca01ec13c9e02768811c75cd589f910ea22243c8f358779d0d82801c0542c1177cdf949bc2fac00
+Description: Tap on the time to see the date in the status bar!
+Name: TapTapTipTapTime
+Author: YulkyTulky
+
 Package: me.kritanta.gravitation
 Architecture: iphoneos-arm64
 Version: 1.0.0
