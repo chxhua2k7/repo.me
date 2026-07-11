@@ -66,10 +66,13 @@ jobs:
           apt-ftparchive release -c assets/repo/repo.conf . > Release
 
       - name: Sign Release (only if GPG_SIGNING_KEY secret is set)
-        if: ${{ secrets.GPG_SIGNING_KEY != '' }}
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
         run: |
+          if [ -z "$GPG_SIGNING_KEY" ]; then
+            echo "GPG_SIGNING_KEY secret not set; skipping Release signing."
+            exit 0
+          fi
           echo "$GPG_SIGNING_KEY" | gpg --batch --import
           key_id=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
           gpg --batch -abs -u "$key_id" -o Release.gpg Release
