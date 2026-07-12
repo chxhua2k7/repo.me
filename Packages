@@ -83,6 +83,23 @@ Description: Tap on the time to see the date in the status bar!
 Name: TapTapTipTapTime
 Author: YulkyTulky
 
+Package: com.yulkytulky.taptaptiptaptime
+Architecture: iphoneos-arm64
+Version: 27.1
+Section: Tweaks
+Maintainer: YulkyTulky
+Installed-Size: 588
+Depends: mobilesubstrate (>= 0.9.5000), preferenceloader, firmware (>= 15.0)
+Filename: ./debians/com.yulkytulky.taptaptiptaptime_27.1_iphoneos-arm64.deb
+Size: 218332
+MD5sum: 9fa05ec18495e705422e346568b231f1
+SHA1: bc004267a060535cd54446170c31f84bbbd12931
+SHA256: 40398c8d6bb5167f7e2c23401af3668240419f76edb9f3f3ab0c470e039f124f
+SHA512: bfc2f9d29411e8bd924f45f42b1643fa59297c46194e1038c3a204b0a1c5622790f0d2ef73702ee543ad0f22f8d221b5bd1d9663cc8eb99846fb4ceaf74a35c6
+Description: Tap on the time to see the date in the status bar!
+Name: TapTapTipTapTime
+Author: YulkyTulky
+
 Package: me.kritanta.gravitation
 Architecture: iphoneos-arm64
 Version: 1.0.0
