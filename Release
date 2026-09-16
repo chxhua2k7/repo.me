@@ -1,7 +1,7 @@
 Architectures: iphoneos-arm iphoneos-arm64
 Codename: chxhua2k7
 Components: main
-Date: Wed, 16 Sep 2026 16:27:19 +0000
+Date: Wed, 16 Sep 2026 21:03:31 +0000
 Description: chxhua2k7's jailbreak tweak repository.
 Label: chxhua2k7's Repo
 Origin: chxhua2k7
@@ -10,56 +10,56 @@ Version: 1.0
 MD5Sum:
  948e6b018e474856567a76120edacb8c             2685 Contents-iphoneos-arm
  a91691ca45c8e7aca3183966ba16a955              470 Contents-iphoneos-arm.bz2
- c2d72647e3b69924e098c177043f9799              416 Contents-iphoneos-arm.gz
+ 9e9914bf082558a9691563369637ecc9              416 Contents-iphoneos-arm.gz
  a89392db685163225cecccf97fe43aa2              536 Contents-iphoneos-arm.lz4
  8f1a763ab53f3d754990fc0dccbd8025              401 Contents-iphoneos-arm.lzma
  d44dd7144b16ba827399c17f1809ae2e              448 Contents-iphoneos-arm.xz
  ebaed3444ea68e0ef3848205149598da              383 Contents-iphoneos-arm.zst
  02d1724f5ec2c290085f5a1877deeb7b             5558 Packages
  87379bb06ae9d4cea5b0a24f3502c985             2039 Packages.bz2
- 484333cc78a4c6fc394699a7ffc61e3d             1967 Packages.gz
+ b8412a66cfd395f63eaebd5776540c19             1967 Packages.gz
  dc104ee17c2e00260858fc517341d131             1868 Packages.xz
  67e6d50f68cefd002ddeebe3dab9e9f8             1821 Packages.zst
- e87d8658699b2877b78b198365b0a9aa              240 Release
+ 9a7c7211a063e6a2fb43a31458333dd7              240 Release
 SHA1:
  5490fe52f3a96bab43ab52bec366f607e2b5592b             2685 Contents-iphoneos-arm
  25bf7fc01da9e3d2b595d28e2baebe3094ef1d4c              470 Contents-iphoneos-arm.bz2
- a6ee1db941fe20014d48e2ab668568aa129122be              416 Contents-iphoneos-arm.gz
+ 5c42e49d8ec51a409e2cafffb1e7ccd0edc9f5f5              416 Contents-iphoneos-arm.gz
  b0e6ef76c25bee5ab2af8cb198307f0f001a31a1              536 Contents-iphoneos-arm.lz4
  d988acb1fbcb2fc3fa8738fc9786ef77baa0528a              401 Contents-iphoneos-arm.lzma
  6dd03e4c818db3d0d6b11249437ffdbbf2a3516c              448 Contents-iphoneos-arm.xz
  7c0e945c9d5f47d1e0cb9093023ac897e082b5b8              383 Contents-iphoneos-arm.zst
  a03094214318111606e71c0730044aba05aaa4fc             5558 Packages
  209829f633a8f22443c402da9b0cb1655948268e             2039 Packages.bz2
- 5cd933e0f44686a51a20da8263ce2f2bf3ec3e71             1967 Packages.gz
+ e084423c832f10e7aff814bdab7a7a3e88d375ca             1967 Packages.gz
  b1ea579925401c6c6b6e27f679c91cf58aaea138             1868 Packages.xz
  150767675343ce2344ab1d0917f2495ed0da687e             1821 Packages.zst
- f2bb169ed7c0aad5c6c12fbdd8ba4653659e722c              240 Release
+ dc6650b0ea9e97da308a3a72c94c6bdac2132d2c              240 Release
 SHA256:
  63f86d6f0b636f717737c8a9baac17e13eac013da15db140db1b5896e90e5642             2685 Contents-iphoneos-arm
  65669ccf2ce7f3b380d4d953c95dbbe0b03af7f62175cbe3770cf29efc38c549              470 Contents-iphoneos-arm.bz2
- 6f9742ff6050eafc8a51e66c99000eaa66254ce3c0e8c30349e513688c9d0a52              416 Contents-iphoneos-arm.gz
+ acfd05b07035186840e85731430fb069cb663f97f9c7c3cdc6f6ba1f50950a26              416 Contents-iphoneos-arm.gz
  88a70e4d1c13bfb14944492b242bc889427045972b1594111e02dafd00efd9b5              536 Contents-iphoneos-arm.lz4
  373103f955fff550b37fb062cc6e925576f31309b212298c100acacc5e507c01              401 Contents-iphoneos-arm.lzma
  7c1ffb236db927747358d27dbda7e2b562f3373d2ff2b7150985315710183cc5              448 Contents-iphoneos-arm.xz
  44972be6594a89ed47fd1e2b01ceaad75112a8217828f0bab2f84d20dab89c8c              383 Contents-iphoneos-arm.zst
  44f4d578ac1664295a5624f0166b03ab082b406cc7aeae5fe1876dfb25b6ea3b             5558 Packages
  77a42cc7cf84fd7ba2db0c5cc2358b2742ae5607f8305b5f76b86dd267478a4f             2039 Packages.bz2
- 85c61f6fb74a13d414e042c5d1e0459041d06728e618b29035b0ab86702e2190             1967 Packages.gz
+ f56770810406482113a02989c572e01826524a1878f3bf285b8511073be69efb             1967 Packages.gz
  8143d5d412cd871068bd5c3c7a29639f555c7c7f2bc4191186d4f73db4e257b1             1868 Packages.xz
  66ed910234f7c3a33fe3d34b08d15b88077ce3ba6f141e932ee2153ed3626789             1821 Packages.zst
- 41e0d563c642ec882a3ee7478adc6f853970a06753db7baf607d148e7fcaf76a              240 Release
+ 2aaef9e5ec6a679638c11c184bf14a809c3432548096fc1b0f0428edf78b2108              240 Release
 SHA512:
  fe54583bcf207ed806c6935ca9a2e999d7561677eea419a0e2c755728866d1e370a6ddf233764c858ab18081c3493031038f04c5d0f2ae44a9ebc7f41204b382             2685 Contents-iphoneos-arm
  2be0f47d3c490734b332605539c3efd7b9d5ffea6fd9f3ad0b6d097b1498889cfb37f9cc67c8c4cff6d0600e3636b57c9c482726aeed7e0a7760b84f626e881e              470 Contents-iphoneos-arm.bz2
- 3011b20817e649471e7ccc62a097eaf415d1a6c11106d23b1182c045beddd24c2531de56f2f7d127fb250bfb964b3fa6d1b0b8b1625739214bcda70c70046457              416 Contents-iphoneos-arm.gz
+ 0efccb71b95eee32488a17dec009e03753b0995b793f3c39fe7ae3055251fececd1c6a2d6e45bc3d3f2291cee72ad206e92a3782405c5e8bebce3492ddfc6a03              416 Contents-iphoneos-arm.gz
  8002eff7f544961fb771adbfac5cdf3fea3d368370a84ef555ca3472a7d92eb1140e311669ddc0c06c1ad824a30685d695548bf9c214793354c75bbce7c402fe              536 Contents-iphoneos-arm.lz4
  9e6e7af817335625363f7cec886876932f6a976642aa1896b418d1abe5770ac99fdb095a7ca2b38b91395f3b0ddebd5fad4087211c35f087c269c015d480a94b              401 Contents-iphoneos-arm.lzma
  5d438b72269774f46a1ac88633de0dcb62b28819f51c92fc4c3e30f01225a7aaac83bf79a2afabb92398746d7a93cff4cf61fc8d16e4dab883d04ab35c8facc9              448 Contents-iphoneos-arm.xz
  9c3142da87d31d902496d15dd3add82faae1578fdfeab39c90caace1436fd844eb1ff2574693bbae9896847f3daccb50032bd113d0d2a6bdfe1e7c37d051718c              383 Contents-iphoneos-arm.zst
  eb97a810196db866ed831fcee4392e9e8442be93d2812ee86f7b37544a71beef75dc5431f2269bc81a02a62468fb74f697b25402cdc2828d1b2239d32355d07c             5558 Packages
  386ff83265f128c83571782d547230f58371910a55f5d0432f721b2027a4781be6540b43ce5aaf5217fa7c1a34fecef4f0b01663cc860edeef3223b1fff6002c             2039 Packages.bz2
- dcbc9fd1cb4e466c468a456011492c089f334260a295ed906fe64001420cd486c1d1e94d27315e6c490ebd0740bcc04e5579b324860ff734fc07617c51a7adc1             1967 Packages.gz
+ c48ca4381c81f913750f179dabb934e3d01d10b15d96a711b21996bcd5339dc6011dff4e1a4e54e851cdad832f8b5d347754cc0292a091930eca3ff9a34bba31             1967 Packages.gz
  189341805ece6a2b5e9653626c2c3d9c917719f027e8ad48946295d8701ed372da6ea7e01f3299bd42ddfaa223964d8bfa524a53351c16a5646fa302dc286861             1868 Packages.xz
  c5c1c5b4886ca85b93e5896d4c65ca53723fcd9247a5bce7783500b1487e1a4b47d79f356e584b6d7577868a91052c001c7b29df9ced54434c452f948ecc8100             1821 Packages.zst
- a07fb0ae44d28742b82d3cf990da5409f199d2e4e9019644115d9e05bac3b9ab85c3269ca15be8d00ba3deaadb756b5fb15bdcacdd6f10ee6af92d9583cef8c7              240 Release
+ d4799c4f0556fb746dab28ea62af3b20b57e072decb1c3be7f4db7cbcb4dc1d473ec68fc2b1e08eaf80e4c1a4e8cb2cad80047ca28659300fae202e94f1ecc19              240 Release
