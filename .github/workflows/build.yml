@@ -1,0 +1,72 @@
+name: Build & deploy repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [release-sync]       # 插件 repo 發 release 後送來的事件
+  schedule:
+    - cron: '23 */6 * * *'      # 備援：README、release 說明改了也會在 6 小時內跟上
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0          # debs/ 裡手動放的 .deb 用 git 紀錄當發布日期
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Install Pillow (shrinks screenshots)
+        run: pip install --quiet pillow
+
+      - uses: actions/cache@v6
+        with:
+          path: .cache
+          key: repo-cache-${{ github.run_id }}
+          restore-keys: repo-cache-
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/repo.py build --out _site
+
+      - name: Sign Release (only when the GPG_SIGNING_KEY secret is set)
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+        run: |
+          if [ -z "$GPG_SIGNING_KEY" ]; then
+            echo "GPG_SIGNING_KEY not set; Release stays unsigned."
+            exit 0
+          fi
+          echo "$GPG_SIGNING_KEY" | gpg --batch --import
+          key=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec/ {print $5; exit}')
+          gpg --batch --yes -abs -u "$key" -o _site/Release.gpg _site/Release
+          gpg --batch --yes --clearsign -u "$key" -o _site/InRelease _site/Release
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

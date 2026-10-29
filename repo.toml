@@ -1,0 +1,57 @@
+# repo.y00e.org 的設定。改完 push 到 main，GitHub Actions 就會重新產生並部署整個 repo。
+# 文字欄位都能用 {{變數}}：完整清單見 README.md，或跑 `python3 tools/repo.py vars <套件>`。
+
+[repo]
+name = "chxhua2k7's Repo"
+url = "https://repo.y00e.org"           # 結尾不要加 /
+description = "chxhua2k7's jailbreak tweak repository."
+language = "en"                          # 網頁和 depiction 的語言："en" 或 "zh-Hant"
+tint = "#5E5CE6"                         # 預設主題色，套件可在 meta/<套件>/package.toml 各自覆寫
+icon = "CydiaIcon.png"                   # site/ 裡的 repo 圖示
+
+# 下面是 Release 檔的欄位；origin、label、codename 沒寫就用 name
+origin = "chxhua2k7"
+codename = "chxhua2k7"
+suite = "stable"
+architectures = ["iphoneos-arm", "iphoneos-arm64"]   # 會再自動加上套件實際用到的架構
+
+# 自訂變數：任何文字欄位寫 {{github}} 就會換成這裡的值
+[vars]
+github = "https://github.com/chxhua2k7"
+
+# 首頁和每個 depiction 底部的連結
+[[link]]
+name = "GitHub"
+url = "{{github}}"
+
+# 自動更新紀錄：release 有寫說明就用說明；沒有的話，用上一個 release 到這個 release
+# 之間的 commit（略過合併、只改 CI/文件的 commit，和下面 ignore 比對到的訊息）。
+# 想自己寫就放 meta/<套件>/changelog.md，會蓋過自動產生的。
+[changelog]
+ignore = [
+  '^Merge ',
+  '^(ci|chore|build|docs|test|style)(\(.*\))?!?:',
+  '(?i)\.DS_Store',
+  '(?i)^bump version',
+  '(?i)^version bump',
+  '(?i)^(add|update|edit) readme',
+]
+ignore_paths = [".github/*", "*.md", ".gitignore", "*.DS_Store", "LICENSE*", "images/*", "screenshots/*"]
+commit_bodies = true                     # commit 內文裡的 "- 項目" 也列進去
+
+# 套件來源：每個 GitHub repo 所有 release 裡的 .deb 都會上架（舊版本也留著）。
+# 可選設定：
+#   prereleases = true        連 pre-release 也上架（預設不上）
+#   assets = "*.deb"          只收符合的檔名
+#   changelog = "auto"        "auto"、"release"（只用 release 說明）、"commits"、"none"
+#   readme = true             用 README 當介紹與截圖來源（meta 有寫 description 時不用）
+# 手動的 .deb 直接放進 debs/。
+
+[[source]]
+github = "chxhua2k7/Gravitation"
+
+[[source]]
+github = "chxhua2k7/MetalHudLoader"
+
+[[source]]
+github = "chxhua2k7/TapTapTipTapTime"
