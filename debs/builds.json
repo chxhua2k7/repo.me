@@ -1,0 +1,37 @@
+{
+  "com.pookjw.metalhudloader_1.4.1_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/MetalHudLoader",
+    "commit": "e3705b612a46b29a6e41b3b7de3e147c98a31df2",
+    "date": "2026-07-11T20:57:58Z"
+  },
+  "com.pookjw.metalhudloader_27.0_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/MetalHudLoader",
+    "commit": "067441c9dd8f5f556ebf6b89d17f2f6e0f1f0f15",
+    "date": "2026-07-11T21:25:27Z"
+  },
+  "com.yulkytulky.taptaptiptaptime_1.0.1_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/TapTapTipTapTime",
+    "commit": "d51a55e4a9b97dbddcb38c45398f82e665615ac2",
+    "date": "2026-07-11T20:45:43Z"
+  },
+  "com.yulkytulky.taptaptiptaptime_27.0_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/TapTapTipTapTime",
+    "commit": "1594189b358e4b2d1c4f78835010533bf4acb975",
+    "date": "2026-07-11T21:25:17Z"
+  },
+  "com.yulkytulky.taptaptiptaptime_27.1_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/TapTapTipTapTime",
+    "commit": "35b8855aea81d567532dc4ddf0351617fec956b5",
+    "date": "2026-07-12T08:20:31Z"
+  },
+  "me.kritanta.gravitation_1.0.0_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/Gravitation",
+    "commit": "445da100aa704bae5b0981691c3544161c55b335",
+    "date": "2026-07-10T01:14:12Z"
+  },
+  "me.kritanta.gravitation_27.0_iphoneos-arm64.deb": {
+    "repo": "chxhua2k7/Gravitation",
+    "commit": "0a9312b9ba4ba7ed5418ea06415f0ccb44dbcab4",
+    "date": "2026-07-11T21:25:40Z"
+  }
+}

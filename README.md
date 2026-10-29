@@ -2,64 +2,69 @@
 
 <https://repo.y00e.org> 的原始碼。這是一個越獄插件源，Sileo、Zebra、Saily、Cydia 都能加入。
 
-整個網站由 [`tools/repo.py`](tools/repo.py) 產生。它會抓下列 GitHub repo 所有 release 裡的 `.deb`，再加上 `debs/` 裡手動放的檔案，產生以下內容：
+## 發新版本
+
+1. 改插件 repo 裡 `control` 的 `Version`（要比上一版大）
+2. push 到預設分支
+
+就這樣。15 分鐘內，這裡的 workflow 會看到新版本號，從原始碼編出 `.deb`、放進 `debs/`，然後更新 repo。插件 repo 不用發 release，也不用放任何 workflow 或 token。在其他分支 push 不會有任何影響。
+
+想馬上上架，不想等：
+
+```bash
+gh workflow run build.yml --repo chxhua2k7/repo.me
+```
+
+## 新增插件
+
+插件 repo 要是公開的，根目錄要有 Theos 的 `Makefile` 和 `control`；`Makefile` 的 `TARGET` 要寫明 SDK 版本，例如 `iphone:clang:16.5:15.0`。然後在 `repo.toml` 加兩行，push：
+
+```toml
+[[source]]
+github = "chxhua2k7/NewTweak"
+```
+
+`[[source]]` 的可選設定：
+
+```toml
+# make = "package FINALPACKAGE=1"   給 make 的參數
+# sdk = "16.5"                      Makefile 的 TARGET 沒寫 SDK 版本時用
+# build = false                     不自動編，只用 debs/ 裡手動放的
+# changelog = "none"                不從 commit 產生更新紀錄
+# readme = false                    不用 README 當介紹
+```
+
+私有 repo、或不想讓這裡編的插件：自己編好 `.deb` 放進 `debs/`，push。
+
+## 運作方式
+
+[`.github/workflows/build.yml`](.github/workflows/build.yml) 每 15 分鐘、push 到 `main`、或手動執行時：
+
+1. **check**：讀每個插件預設分支的 `control`，版本號在 `debs/` 裡還沒有的，列為要編
+2. **tweak**：在 macOS 上用 Theos 編那些版本（只抓 Makefile 指定的 SDK）
+3. **site**：把編好的 `.deb` commit 進 `debs/`、記到 `debs/builds.json`（哪個 repo、哪個 commit、什麼時候），再用 [`tools/repo.py`](tools/repo.py) 產生整個網站；跟線上一樣就不部署
+4. **deploy**：部署到 GitHub Pages
+
+同一個 commit 編失敗只會試一次，push 新的 commit 或手動執行才會再試，不會每 15 分鐘寄一封失敗通知。
+
+產生的內容：
 
 - APT 索引：`Packages`（含 gz / bz2 / xz / zst）和 `Release`
 - 每個套件的 Sileo 原生 depiction（`depiction.json`，分「詳細資訊」和「更新紀錄」兩頁）
 - 給 Cydia、Zebra 和瀏覽器看的網頁 depiction（會依使用者的 iOS 版本顯示相容性）
 - 首頁（套件列表、最近更新）和 `sileo-featured.json`
 
-產物只會部署到 GitHub Pages，不會 commit 回這個 repo。
-
-## 自動更新
-
-[`.github/workflows/build.yml`](.github/workflows/build.yml) 在下面這些時候重建並部署：
-
-| 時機 | 說明 |
-| --- | --- |
-| 插件 repo 發 release | 插件 repo 的 workflow 送出 `release-sync` 事件，大約一分鐘就上架 |
-| push 到 `main` | 改了 `repo.toml`、`meta/`、`debs/`、`site/` 或產生器 |
-| 每 6 小時 | 備援。插件 repo 的 README 或 release 說明改了，也會在這時跟上 |
-| 手動 | Actions › Build & deploy repo › Run workflow |
-
-插件 repo 發完 release 後，要送出這個事件：
-
-```yaml
-- name: Notify repo.me
-  if: github.ref == 'refs/heads/main'
-  env:
-    GH_TOKEN: ${{ secrets.REPO_ME_DISPATCH_TOKEN }}
-  run: |
-    gh api repos/chxhua2k7/repo.me/dispatches \
-      -f event_type=release-sync \
-      -f "client_payload[repo]=${{ github.repository }}"
-```
-
-`REPO_ME_DISPATCH_TOKEN` 是一個對 `chxhua2k7/repo.me` 有 Contents 寫入權限的 token。Gravitation、MetalHudLoader、TapTapTipTapTime 都已經設好了。
+這個 repo 的 `main` 會有 bot 的「Add …」commit，本機改東西前先 `git pull`。
 
 ## 資料夾
 
 | 路徑 | 用途 |
 | --- | --- |
-| `repo.toml` | 全域設定、自訂變數、底部連結、更新紀錄規則、套件來源 |
+| `repo.toml` | 全域設定、自訂變數、底部連結、更新紀錄規則、插件來源 |
+| `debs/` | 所有上架的 `.deb`，和記錄出處的 `builds.json` |
 | `meta/<套件 ID>/` | 單一套件的額外設定（全部可省略，見下方） |
-| `debs/` | 手動放的 `.deb`。發布日期取它第一次被 commit 的時間 |
 | `site/` | 原樣複製到網站根目錄的檔案：repo 圖示、`CNAME`、CSS、JS |
 | `tools/repo.py` | 產生器 |
-
-## 新增插件
-
-- 有 GitHub release 的：在 `repo.toml` 加一段 `[[source]]`，然後在那個 repo 加上面的通知步驟。
-- 只有 `.deb` 的：放進 `debs/`，push。
-
-```toml
-[[source]]
-github = "chxhua2k7/NewTweak"
-# prereleases = true      連 pre-release 也上架
-# assets = "*.deb"        只收符合的檔名
-# changelog = "auto"      "auto"、"release"、"commits"、"none"
-# readme = false          不用 README 當介紹
-```
 
 ## 會自動抓的東西
 
@@ -76,22 +81,21 @@ github = "chxhua2k7/NewTweak"
 | 相容性 | `min_ios` / `max_ios` → `Depends` 裡的 `firmware (>= …)` / `firmware (<< …)` |
 | 越獄類型 | 架構：`iphoneos-arm` = Rootful，`iphoneos-arm64` = Rootless，`iphoneos-arm64e` = Roothide |
 | 連結 | 原始碼、原始專案（fork 的話）、回報問題（repo 有開 Issues 的話）、`homepage`、`[[link]]` |
-| 日期 | GitHub release 的發布時間；`debs/` 裡的是第一次 commit 的時間 |
+| 日期 | `debs/builds.json` 記的上架時間；手動放的 `.deb` 是第一次 commit 的時間 |
 
 ## 更新紀錄
 
 每個版本的說明依序取自：
 
 1. `meta/<套件>/changelog.md` 裡同版本的段落
-2. GitHub release 的說明（自動去掉「Full Changelog」那行）
-3. 上一個 release 到這個 release 之間的 commit：
+2. 上一版到這一版之間的 commit（`debs/builds.json` 記著每版是從哪個 commit 編的）：
    - 略過合併 commit、只改 CI 或文件的 commit（`[changelog].ignore_paths`），和訊息符合 `[changelog].ignore` 的 commit
    - 訊息開頭的「1.4.1: 」這類版本號會拿掉
    - commit 內文裡的 `- 項目` 會列成子項目
    - 同一個 commit 如果在舊版本已經出現過，就不再重複列出
-4. 都沒有的話：最舊的版本寫「Initial release.」，其他寫「No release notes.」
+3. 都沒有的話：最舊的版本寫「Initial release.」，其他寫「No release notes.」
 
-`changelog.md` 的格式（日期可省略，有寫就會覆蓋 release 日期）：
+`changelog.md` 的格式（日期可省略，有寫就會覆蓋上架日期）：
 
 ```markdown
 ## 1.2.0 (2026-10-01)
@@ -155,8 +159,8 @@ github = "chxhua2k7/NewTweak"
 | `{{icon_url}}`、`{{header_url}}`、`{{download_url}}` | 圖示、橫幅、最新 `.deb` 的網址 |
 | `{{sileo_url}}`、`{{zebra_url}}` | `sileo://package/…`、`zbra://packages/…` |
 | `{{homepage}}` | 首頁 |
-| `{{source_repo}}`、`{{source_url}}`、`{{releases_url}}`、`{{issues_url}}` | 來源 GitHub repo |
-| `{{release_url}}`、`{{release_tag}}` | 最新版的 GitHub release |
+| `{{source_repo}}`、`{{source_url}}`、`{{issues_url}}` | 來源 GitHub repo |
+| `{{commit}}`、`{{commit_url}}` | 最新版是從哪個 commit 編的 |
 | `{{upstream_repo}}`、`{{upstream_url}}` | fork 的原始專案 |
 | `package.toml` 的 `[vars]` | 自訂（可以覆蓋上面的變數） |
 
@@ -177,4 +181,4 @@ python3 -m http.server 8000 --directory _site
 
 ## 簽署 Release（可選）
 
-到這個 repo 的 Settings › Secrets › Actions 加一個 `GPG_SIGNING_KEY`，內容是 `gpg --armor --export-secret-keys <key>` 的輸出。之後每次建置都會多產生 `Release.gpg` 和 `InRelease`。
+到這個 repo 的 Settings › Secrets › Actions 加一個 `GPG_SIGNING_KEY`，內容是 `gpg --armor --export-secret-keys <key>` 的輸出。之後每次部署都會多產生 `Release.gpg` 和 `InRelease`。

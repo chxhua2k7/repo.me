@@ -1,30 +1,120 @@
 name: Build & deploy repo
 
+# 插件 repo 不用設任何東西：這裡每 15 分鐘看一次各插件預設分支的 control，
+# 版本號變了就從原始碼編出 .deb、放進 debs/，再重建並部署整個 repo。
+
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch:            # 手動執行時，上次編失敗的版本也會再試
   repository_dispatch:
-    types: [release-sync]       # 插件 repo 發 release 後送來的事件
   schedule:
-    - cron: '23 */6 * * *'      # 備援：README、release 說明改了也會在 6 小時內跟上
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    - cron: '*/15 * * * *'
 
 concurrency:
-  group: pages
+  group: repo
   cancel-in-progress: false
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write            # 讓排程不會因為 60 天沒動靜被停掉
+    outputs:
+      builds: ${{ steps.pending.outputs.builds }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - uses: actions/cache@v6
+        with:
+          path: .cache
+          key: repo-cache-check-${{ github.run_id }}
+          restore-keys: repo-cache-
+
+      - id: pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RETRY: ${{ github.event_name == 'workflow_dispatch' && '--retry' || '' }}
+        run: echo "builds=$(python3 tools/repo.py pending $RETRY)" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the schedule alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/build.yml/enable" || true
+
+  tweak:
+    needs: check
+    if: needs.check.outputs.builds != '[]'
+    name: Build ${{ matrix.name }} ${{ matrix.version }}
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.check.outputs.builds) }}
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0          # debs/ 裡手動放的 .deb 用 git 紀錄當發布日期
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.sha }}
+          path: src
+          submodules: recursive
+
+      - name: Install build tools
+        run: brew install make ldid xz
+
+      - uses: actions/checkout@v7
+        with:
+          repository: theos/theos
+          path: theos
+          submodules: recursive
+
+      # 只抓 Makefile 指定的那個 SDK，整個 theos/sdks 太大
+      - name: Fetch iPhoneOS${{ matrix.sdk }}.sdk
+        env:
+          SDK: iPhoneOS${{ matrix.sdk }}.sdk
+        run: |
+          git clone --depth=1 --filter=tree:0 --no-checkout https://github.com/theos/sdks.git "$RUNNER_TEMP/sdks"
+          git -C "$RUNNER_TEMP/sdks" sparse-checkout set "$SDK"
+          git -C "$RUNNER_TEMP/sdks" checkout
+          mkdir -p theos/sdks
+          mv "$RUNNER_TEMP/sdks/$SDK" theos/sdks/
+
+      - name: Build
+        env:
+          THEOS: ${{ github.workspace }}/theos
+          MAKE_ARGS: ${{ matrix.make }}
+          BUILD: ${{ toJSON(matrix) }}
+        run: |
+          export PATH="$(brew --prefix make)/libexec/gnubin:$PATH"
+          (cd src && make $MAKE_ARGS)
+          mkdir out
+          cp src/packages/*.deb out/
+          printf '%s' "$BUILD" > out/build.json
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ strategy.job-index }}
+          path: out
+
+  site:
+    needs: [check, tweak]
+    if: ${{ !cancelled() && needs.check.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write           # 把新編好的 .deb commit 進 debs/
+    outputs:
+      changed: ${{ steps.compare.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0        # 手動放的 .deb 用 git 紀錄當上架日期
 
       - uses: actions/setup-python@v7
         with:
@@ -36,15 +126,49 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: .cache
-          key: repo-cache-${{ github.run_id }}
+          key: repo-cache-site-${{ github.run_id }}
           restore-keys: repo-cache-
 
-      - name: Build
+      - uses: actions/download-artifact@v8
+        if: needs.check.outputs.builds != '[]'
+        with:
+          pattern: deb-*
+          path: built
+
+      - name: Add new builds to debs/
+        if: needs.check.outputs.builds != '[]'
+        run: |
+          added=$(python3 tools/repo.py record built/*/)
+          if [ -z "$added" ]; then
+            echo "Nothing was built."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add debs
+          git commit -m "Add $added"
+          git push || { git pull --rebase origin main && git push; }
+
+      - name: Build site
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 tools/repo.py build --out _site
 
+      # 跟線上的比，一樣就不部署（簽章每次都不同，所以在簽之前比）
+      - id: compare
+        run: |
+          (cd _site && find . -type f | LC_ALL=C sort | xargs sha256sum) | sha256sum | cut -d' ' -f1 > "$RUNNER_TEMP/fingerprint"
+          cp "$RUNNER_TEMP/fingerprint" _site/fingerprint.txt
+          url=$(python3 -c "import tomllib; print(tomllib.load(open('repo.toml', 'rb'))['repo']['url'])")
+          if [ "$(curl -fsSL "$url/fingerprint.txt" 2>/dev/null)" = "$(cat "$RUNNER_TEMP/fingerprint")" ]; then
+            echo "Site unchanged; not deploying."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Sign Release (only when the GPG_SIGNING_KEY secret is set)
+        if: steps.compare.outputs.changed == 'true'
         env:
           GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
         run: |
@@ -58,12 +182,17 @@ jobs:
           gpg --batch --yes --clearsign -u "$key" -o _site/InRelease _site/Release
 
       - uses: actions/upload-pages-artifact@v5
+        if: steps.compare.outputs.changed == 'true'
         with:
           path: _site
 
   deploy:
-    needs: build
+    needs: site
+    if: needs.site.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}

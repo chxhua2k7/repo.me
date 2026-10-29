@@ -24,9 +24,8 @@ github = "https://github.com/chxhua2k7"
 name = "GitHub"
 url = "{{github}}"
 
-# 自動更新紀錄：release 有寫說明就用說明；沒有的話，用上一個 release 到這個 release
-# 之間的 commit（略過合併、只改 CI/文件的 commit，和下面 ignore 比對到的訊息）。
-# 想自己寫就放 meta/<套件>/changelog.md，會蓋過自動產生的。
+# 更新紀錄：用上一版到這一版之間的 commit 自動產生（略過合併、只改 CI/文件的 commit，
+# 和下面 ignore 比對到的訊息）。想自己寫就放 meta/<套件>/changelog.md，會蓋過自動產生的。
 [changelog]
 ignore = [
   '^Merge ',
@@ -39,13 +38,14 @@ ignore = [
 ignore_paths = [".github/*", "*.md", ".gitignore", "*.DS_Store", "LICENSE*", "images/*", "screenshots/*"]
 commit_bodies = true                     # commit 內文裡的 "- 項目" 也列進去
 
-# 套件來源：每個 GitHub repo 所有 release 裡的 .deb 都會上架（舊版本也留著）。
-# 可選設定：
-#   prereleases = true        連 pre-release 也上架（預設不上）
-#   assets = "*.deb"          只收符合的檔名
-#   changelog = "auto"        "auto"、"release"（只用 release 說明）、"commits"、"none"
-#   readme = true             用 README 當介紹與截圖來源（meta 有寫 description 時不用）
-# 手動的 .deb 直接放進 debs/。
+# 插件來源：每 15 分鐘看一次預設分支的 control，版本號變了就從原始碼編出 .deb 上架。
+# 插件 repo 要公開、有 Theos 的 Makefile（TARGET 寫明 SDK 版本）和 control。可選設定：
+#   make = "package FINALPACKAGE=1"   給 make 的參數
+#   sdk = "16.5"                      Makefile 沒寫 SDK 版本時用
+#   build = false                     不自動編，只用 debs/ 裡手動放的
+#   changelog = "none"                不從 commit 產生更新紀錄
+#   readme = false                    不用 README 當介紹
+# 私有或不想讓這裡編的插件：自己編好的 .deb 直接放進 debs/。
 
 [[source]]
 github = "chxhua2k7/Gravitation"

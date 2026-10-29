@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """repo.y00e.org 產生器。
 
-從 repo.toml 列出的 GitHub repo 抓所有 release 裡的 .deb（加上 debs/ 裡手動放的），
-產生 APT 索引（Packages、Release）、Sileo 原生 depiction、網頁 depiction、首頁和
+debs/ 裡的 .deb（workflow 從 repo.toml 列出的插件原始碼編好放進來的，或手動放的）
+加上各插件 GitHub repo 的 README 與 commit，產生 APT 索引（Packages、Release）、Sileo 原生 depiction、網頁 depiction、首頁和
 sileo-featured.json，輸出到 _site/ 給 GitHub Pages 部署。
 
   python3 tools/repo.py build             產生 _site/
   python3 tools/repo.py build --offline   不連網，只用 .cache/ 裡上次抓到的資料
   python3 tools/repo.py vars [套件]       列出可用的 {{變數}} 和目前的值
   python3 tools/repo.py new <套件>        建立 meta/<套件>/package.toml 範本
+  python3 tools/repo.py pending           （workflow 用）列出要編的新版本
+  python3 tools/repo.py record <資料夾>   （workflow 用）把編好的 .deb 加進 debs/
 """
 
 from __future__ import annotations
@@ -48,7 +50,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / ".cache"
 UTC = dt.timezone.utc
 
-# 來源 repo 第一個 release 的更新紀錄；組套件時才知道它是不是最舊的版本
+# 來源 repo 第一個編出來的版本的更新紀錄；組套件時才知道它是不是最舊的版本
 INITIAL = "\x00initial"
 
 STRINGS = {
@@ -319,6 +321,14 @@ class GitHub:
         cache.write_text(json.dumps(data))
         return data
 
+    def file(self, repo: str, path: str, ref: str) -> str | None:
+        """repo 在某個 commit 的檔案內容。"""
+        quote = urllib.parse.quote
+        data = self.get(f"repos/{repo}/contents/{quote(path)}?ref={quote(ref, safe='')}", immutable=True)
+        if not isinstance(data, dict) or not data.get("content"):
+            return None
+        return base64.b64decode(data["content"]).decode("utf-8", "replace")
+
     def download(self, url: str, dest: Path, size: int | None = None) -> Path:
         if dest.exists() and (size is None or dest.stat().st_size == size):
             return dest
@@ -474,6 +484,8 @@ class Source:
     conf: dict
     info: dict
     readme: str | None = None
+    head: str | None = None          # 預設分支最新的 commit
+    control: dict | None = None      # 那個 commit 的 control
 
     @property
     def url(self) -> str:
@@ -490,8 +502,7 @@ class Deb:
     control: dict
     date: dt.datetime
     source: Source | None = None
-    tag: str | None = None
-    release_url: str | None = None
+    commit: str | None = None       # 編出這個 .deb 的 commit（debs/builds.json）
     notes: str | None = None
     auto_notes: bool = False        # notes 是從 commit 產生的
 
@@ -588,14 +599,8 @@ def dependency_names(depends: str) -> list[str]:
 # ---------------------------------------------------------------- 來源與更新紀錄
 
 
-def clean_release_body(body: str) -> str:
-    body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
-    body = re.sub(r"(?im)^\*\*Full Changelog\*\*:.*$", "", body)
-    return body.strip()
-
-
 class Changelogs:
-    """沒有 release 說明時，用兩個 tag 之間的 commit 產生更新紀錄。"""
+    """用兩個版本之間的 commit 產生更新紀錄。"""
 
     def __init__(self, cfg: Config, gh: GitHub):
         self.gh = gh
@@ -613,7 +618,7 @@ class Changelogs:
 
     def from_commits(self, repo: str, base: str, head: str) -> str | None:
         quote = functools.partial(urllib.parse.quote, safe="")
-        compare = self.gh.get(f"repos/{repo}/compare/{quote(base)}...{quote(head)}") or {}
+        compare = self.gh.get(f"repos/{repo}/compare/{quote(base)}...{quote(head)}", immutable=True) or {}
         lines = []
         for commit in compare.get("commits", []):
             if len(commit.get("parents", [])) > 1:
@@ -642,41 +647,36 @@ class Changelogs:
         return "\n".join(lines) or None
 
 
-def sync_source(conf: dict, gh: GitHub, logs: Changelogs) -> tuple[Source, list[Deb]]:
+def load_source(conf: dict, gh: GitHub, readme: bool = True) -> Source:
     repo = conf["github"]
     source = Source(repo, conf, gh.get(f"repos/{repo}") or {})
     if not source.info:
         warn(f"{repo}: 找不到這個 repo（私有或打錯？）")
-    if conf.get("readme", True):
-        readme = gh.get(f"repos/{repo}/readme")
-        if readme and readme.get("content"):
-            source.readme = base64.b64decode(readme["content"]).decode("utf-8", "replace")
+        return source
+    branch = gh.get(f"repos/{repo}/branches/{urllib.parse.quote(source.branch, safe='')}") or {}
+    source.head = (branch.get("commit") or {}).get("sha")
+    if source.head:
+        text = gh.file(repo, conf.get("control", "control"), source.head)
+        source.control = parse_control(text) if text else None
+    if not source.control:
+        warn(f"{repo}: {source.branch} 上找不到 {conf.get('control', 'control')}")
+    if readme and conf.get("readme", True):
+        data = gh.get(f"repos/{repo}/readme")
+        if data and data.get("content"):
+            source.readme = base64.b64decode(data["content"]).decode("utf-8", "replace")
+    return source
 
-    releases = [r for r in gh.get(f"repos/{repo}/releases?per_page=100") or [] if not r.get("draft")]
-    releases.sort(key=lambda r: r.get("published_at") or r.get("created_at") or "")
-    mode = conf.get("changelog", "auto")
-    pattern = conf.get("assets", "*.deb")
-    debs: list[Deb] = []
-    previous = None
-    for release in releases:
-        assets = [a for a in release.get("assets", []) if fnmatch.fnmatch(a["name"], pattern)]
-        if assets and (conf.get("prereleases", False) or not release.get("prerelease")):
-            notes, auto = None, False
-            body = clean_release_body(release.get("body") or "")
-            if mode in ("auto", "release") and body:
-                notes = body
-            elif mode in ("auto", "commits"):
-                notes = logs.from_commits(repo, previous["tag_name"], release["tag_name"]) if previous else INITIAL
-                auto = True
-            date = parse_time(release.get("published_at") or release["created_at"])
-            for asset in assets:
-                path = gh.download(asset["browser_download_url"],
-                                   CACHE / "debs" / repo.replace("/", "__") / asset["name"], asset.get("size"))
-                debs.append(Deb(path, read_control(path), date, source, release["tag_name"], release["html_url"],
-                                notes, auto))
-        previous = release
-    info(f"{repo}: {len(debs)} 個 .deb，來自 {len(releases)} 個 release")
-    return source, debs
+
+BUILDS = ROOT / "debs" / "builds.json"
+
+
+def load_builds() -> dict[str, dict]:
+    """debs/builds.json：每個 .deb 從哪個 repo 的哪個 commit 編出來、什麼時候上架。"""
+    return json.loads(BUILDS.read_text()) if BUILDS.exists() else {}
+
+
+def save_builds(builds: dict[str, dict]) -> None:
+    BUILDS.write_text(json.dumps(dict(sorted(builds.items())), indent=2, ensure_ascii=False) + "\n")
 
 
 def git_time(*args: str) -> dt.datetime | None:
@@ -688,15 +688,94 @@ def git_time(*args: str) -> dt.datetime | None:
     return parse_time(lines[-1]) if out.returncode == 0 and lines else None
 
 
-def local_debs() -> list[Deb]:
+def load_debs(sources: dict[str, Source], logs: Changelogs) -> list[Deb]:
+    builds = load_builds()
+    by_package = {s.control["Package"]: s for s in sources.values() if s.control and s.control.get("Package")}
     debs = []
     for path in sorted((ROOT / "debs").glob("*.deb")):
-        rel = str(path.relative_to(ROOT))
-        date = git_time("--follow", "--diff-filter=A", "--format=%cI", "--", rel)
-        debs.append(Deb(path, read_control(path), date or dt.datetime.fromtimestamp(path.stat().st_mtime, UTC)))
-    if debs:
-        info(f"debs/: {len(debs)} 個 .deb")
+        control = read_control(path)
+        record = builds.get(path.name, {})
+        date = parse_time(record["date"]) if record.get("date") else (
+            git_time("--follow", "--diff-filter=A", "--format=%cI", "--", str(path.relative_to(ROOT)))
+            or dt.datetime.fromtimestamp(path.stat().st_mtime, UTC))
+        source = sources.get(record.get("repo", "")) or by_package.get(control.get("Package", ""))
+        debs.append(Deb(path, control, date, source, record.get("commit")))
+
+    # 同一個來源的版本由舊到新，每版的更新紀錄 = 上一版的 commit 到這一版的 commit
+    for source in sources.values():
+        if source.conf.get("changelog", "auto") == "none":
+            continue
+        built = sorted((d for d in debs if d.source is source and d.commit), key=lambda d: version_key(d.version))
+        for package in dict.fromkeys(d.package for d in built):
+            previous = None
+            for deb in (d for d in built if d.package == package):
+                deb.notes = logs.from_commits(source.repo, previous.commit, deb.commit) if previous else INITIAL
+                deb.auto_notes = True
+                previous = deb
+    info(f"debs/: {len(debs)} 個 .deb")
     return debs
+
+
+def makefile_sdk(makefile: str | None) -> str | None:
+    m = re.search(r"^\s*TARGET\s*[:?]?=\s*iphone:clang:([\d.]+)", makefile or "", re.M)
+    return m.group(1) if m else None
+
+
+def pending(cfg: Config, gh: GitHub, retry: bool) -> list[dict]:
+    """預設分支的 control 版本還沒有 .deb 的來源，給 workflow 去編。"""
+    have = {(c.get("Package"), c.get("Version")) for c in map(read_control, (ROOT / "debs").glob("*.deb"))}
+    attempted_file = CACHE / "attempted.json"
+    attempted = json.loads(attempted_file.read_text()) if attempted_file.exists() and not retry else []
+    jobs = []
+    for conf in cfg.sources:
+        if conf.get("build", True) is False:
+            continue
+        source = load_source(conf, gh, readme=False)
+        control = source.control
+        if not control or (control.get("Package"), control.get("Version")) in have:
+            continue
+        key = f"{source.repo}@{source.head}"
+        if key in attempted:
+            info(f"{key} 編過但失敗了；push 新的 commit 或手動執行 workflow 會再試")
+            continue
+        sdk = str(conf.get("sdk") or makefile_sdk(gh.file(source.repo, "Makefile", source.head)) or "")
+        if not sdk:
+            warn(f"{source.repo}: Makefile 的 TARGET 沒寫 SDK 版本，請在 [[source]] 加 sdk = \"16.5\"")
+            continue
+        jobs.append({
+            "repo": source.repo,
+            "sha": source.head,
+            "package": control["Package"],
+            "version": control["Version"],
+            "name": control.get("Name") or control["Package"],
+            "sdk": sdk,
+            "make": conf.get("make", "package FINALPACKAGE=1"),
+        })
+        attempted.append(key)
+        info(f"{source.repo}: 要編 {control['Package']} {control['Version']}（{source.head[:7]}）")
+    CACHE.mkdir(exist_ok=True)
+    attempted_file.write_text(json.dumps(attempted[-200:]))
+    return jobs
+
+
+def record(folders: list[Path]) -> list[str]:
+    """把 workflow 編好的 .deb 放進 debs/，並記到 builds.json。"""
+    builds = load_builds()
+    added = []
+    for folder in folders:
+        if not (folder / "build.json").is_file():
+            continue
+        job = json.loads((folder / "build.json").read_text())
+        for path in sorted(folder.rglob("*.deb")):
+            control = read_control(path)
+            if (control.get("Package"), control.get("Version")) != (job["package"], job["version"]):
+                continue
+            shutil.copy2(path, ROOT / "debs" / path.name)
+            builds[path.name] = {"repo": job["repo"], "commit": job["sha"],
+                                 "date": dt.datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
+            added.append(f"{job['name']} {job['version']}")
+    save_builds(builds)
+    return list(dict.fromkeys(added))
 
 
 def parse_changelog_md(path: Path) -> dict[str, tuple[dt.datetime | None, str]]:
@@ -934,10 +1013,9 @@ class Package:
             homepage=self.homepage or "",
             source_repo=source.repo if source else "",
             source_url=source.url if source else "",
-            releases_url=f"{source.url}/releases" if source else "",
             issues_url=f"{source.url}/issues" if source else "",
-            release_url=latest.release_url or "",
-            release_tag=latest.tag or "",
+            commit=latest.commit or "",
+            commit_url=f"{source.url}/commit/{latest.commit}" if source and latest.commit else "",
             upstream_repo=parent.get("full_name", ""),
             upstream_url=parent.get("html_url", ""),
         )
@@ -1443,13 +1521,14 @@ def write_indexes(cfg: Config, out: Path, stanzas: list[str], date: dt.datetime,
     (out / "Release").write_text("\n".join(lines) + "\n")
 
 
+def collect(cfg: Config, gh: GitHub) -> list[Package]:
+    sources = {conf["github"]: load_source(conf, gh) for conf in cfg.sources}
+    return assemble(cfg, gh, load_debs(sources, Changelogs(cfg, gh)))
+
+
 def build(cfg: Config, out: Path, offline: bool) -> list[Package]:
     gh = GitHub(offline)
-    logs = Changelogs(cfg, gh)
-    debs = local_debs()
-    for conf in cfg.sources:
-        debs += sync_source(conf, gh, logs)[1]
-    packages = assemble(cfg, gh, debs)
+    packages = collect(cfg, gh)
 
     if out.exists():
         shutil.rmtree(out)
@@ -1548,11 +1627,19 @@ def main() -> None:
     v.add_argument("--offline", action="store_true")
     n = sub.add_parser("new", help="建立 meta/<套件>/package.toml 範本")
     n.add_argument("package")
+    p = sub.add_parser("pending", help="（workflow 用）列出要編的新版本，JSON")
+    p.add_argument("--retry", action="store_true", help="上次編失敗的也再試")
+    r = sub.add_parser("record", help="（workflow 用）把編好的 .deb 加進 debs/")
+    r.add_argument("folders", nargs="*", type=Path)
     args = parser.parse_args()
 
     cfg = Config(ROOT / "repo.toml")
     if args.command == "build":
         build(cfg, ROOT / args.out, args.offline)
+    elif args.command == "pending":
+        print(json.dumps(pending(cfg, GitHub(False), args.retry)))
+    elif args.command == "record":
+        print(", ".join(record(args.folders)))
     elif args.command == "new":
         path = ROOT / "meta" / args.package / "package.toml"
         if path.exists():
@@ -1561,12 +1648,7 @@ def main() -> None:
         path.write_text(PACKAGE_TEMPLATE.format(id=args.package))
         print(path.relative_to(ROOT))
     else:
-        gh = GitHub(args.offline)
-        logs = Changelogs(cfg, gh)
-        debs = local_debs()
-        for conf in cfg.sources:
-            debs += sync_source(conf, gh, logs)[1]
-        packages = assemble(cfg, gh, debs)
+        packages = collect(cfg, GitHub(args.offline))
         chosen = next((p for p in packages if p.id == args.package), None)
         if args.package and not chosen:
             sys.exit(f"沒有 {args.package}；有：{', '.join(p.id for p in packages)}")
