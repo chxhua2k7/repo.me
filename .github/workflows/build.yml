@@ -188,7 +188,8 @@ jobs:
 
   deploy:
     needs: site
-    if: needs.site.outputs.changed == 'true'
+    # 沒有要編的插件時 tweak 會被略過；不寫 !cancelled() 的話，下游的 job 會跟著被略過
+    if: ${{ !cancelled() && needs.site.result == 'success' && needs.site.outputs.changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
